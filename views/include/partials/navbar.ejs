@@ -1,0 +1,26 @@
+<nav>
+    <a href="" class="nav-brand">OnlineChess <img src="/assets/chess-icons/chess-pawn-solid.svg" alt="Chess Pawn"></a>
+    
+    <ul class="nav">
+      <%- if(authorise){ %>
+        <li class="nav-item">
+            <a href="/games">Play Game</a>
+        </li>
+
+        <li class="nav-item">
+            <a href="/my-stats">My Stats</a>
+        </li>
+        <li class="nav-item">
+            <a href="profile">My Stats</a>
+        </li>
+      <%} else { %>
+        <li class="nav-item">
+            <a href="/register">Register</a>
+        </li>
+
+        <li class="nav-item">
+            <a href="/login">Login</a>
+        </li>
+      <% } %>
+    </ul>
+</nav>
