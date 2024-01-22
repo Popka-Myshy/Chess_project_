@@ -77,7 +77,7 @@ io.on("connection", (socket) => {
 
                     room.gameStarted = true;
                     redisClient.set(roomId, JSON.stringify(room));
-                    socket.to(roomId).emit('game-started');
+                    socket.to(roomId).emit('game-started', user);
 
                     redisClient.get('roomIndices', (err, reply) => {
                         if(err) throw err;
@@ -254,7 +254,9 @@ io.on("connection", (socket) => {
     
     })
 
-
+    socket.on('update-timer', (roomId, minutes, seconds) => {
+        socket.to(roomId).emit('enemy-timer-updated', minutes, seconds);
+    });
     
     socket.on("disconnect", () => {
         let socketId = socket.id;
@@ -280,6 +282,141 @@ io.on("connection", (socket) => {
 
                     RemoveRoom(user.room, user_rank);
                 }
+            }
+        });
+    });
+
+    socket.on('move-made', (roomId, move, pawnPromotion = null, castling = null, elPassantPerformed = false) => {
+        redisClient.get(roomId, (err, reply) => {
+            if(err) throw err;
+
+            if(reply){
+                let room = JSON.parse(reply);
+
+                room.moves.push(move);
+
+                redisClient.set(roomId, JSON.stringify(room));
+
+                if(pawnPromotion){
+                    socket.to(roomId).emit('enemy-moved_pawn-promotion', move, pawnPromotion);
+                }else if(castling){
+                    socket.to(roomId).emit('enemy-moved_castling',castling);
+                }else if(elPassantPerformed){
+                    socket.to(roomId).emit('enemy-moved_el-passant', move);
+                }else{
+                    socket.to(roomId).emit('enemy-moved', move);
+                }
+
+            }else{
+                socket.emit('error', `Something rong with the connection to room '${roomId}'`);
+            }
+        });
+    });
+
+    socket.on('check', (roomId) => {
+        socket.to(roomId).emit('king-is-attacked');
+    });
+
+    socket.on('checkmate', (roomId, winner, score, startedAt) => {
+        redisClient.get(roomId, (err, reply) => {
+            if(err) throw err;
+
+            if(reply){
+                let room = JSON.parse(reply);
+
+                redisClient.del(`${room.players[0].id} - played-games`);
+                redisClient.del(`${room.players[1].id} - played-games`);
+
+                room.gameFinished = true;
+                
+
+                redisClient.set(roomId, JSON.stringify(room));
+
+                socket.to(roomId).emit('you-lost', winner, score);
+
+                let query =`
+                    INSERT INTO games (timer, moves, user_id_light, user_id_black, started_at ) 
+                    VALUES('${room.time + ''}', '${JSON.stringify(room.moves)}', '${room.players[0].id}', '${room.players[1].id}', '${startedAt + ''}')
+                `
+
+                db.query(query, (err) => {
+                    if(err) throw err;
+                });
+            }
+        });
+    });
+
+    socket.on('timer-ended', (roomId, loser, startedAt) => {
+        redisClient.get(roomId, (err, reply) => {
+            if(err) throw err;
+
+            if(reply){
+                let room = JSON.parse(reply);
+
+                redisClient.del(`${room.players[0].id} - played-games`);
+                redisClient.del(`${room.players[1].id} - played-games`);
+
+                room.gameFinished = true;
+
+                redisClient.set(roomId, JSON.stringify(room));
+
+                let winner;
+
+                if(room.players[0].username === loser){
+                    winner = room.players[1].username;
+                }else{
+                    winner = room.players[0].username;
+                }
+
+                socket.emit('you-lost', winner);
+                socket.to(roomId).emit('you-won');
+
+                let query =`
+                    INSERT INTO games (timer, moves, user_id_light, user_id_black, started_at ) 
+                    VALUES('${room.time + ''}', '${JSON.stringify(room.moves)}', '${room.players[0].id}', '${room.players[1].id}', '${startedAt + ''}')
+                `
+
+                db.query(query, (err) => {
+                    if(err) throw err;
+                });
+            }
+        });
+    });
+
+    socket.on('draw', (roomId) => {
+        socket.to(roomId).emit('draw');
+    });
+
+    socket.on('update-score', (roomId, playerOneScore, playerTwoScore) => {
+        redisClient.get(roomId, (err, reply) => {
+            if(err) throw err;
+
+            if(reply){
+                let room = JSON.parse(reply);
+
+                let userOne = room.players[0];
+                let userTwo = room.players[1];
+
+                userOne.user_points += playerOneScore;
+                userTwo.user_points += playerTwoScore;
+
+                let query = `
+                    CALL updateScores(
+                        '${userOne.username}', 
+                        '${Math.max(userOne.user_points, 0)}',
+                        '${userTwo.username}', 
+                        '${Math.max(userTwo.user_points, 0)}'
+                    )
+                `;
+
+                db.query(query, (err) => {
+                    if(err) throw err;
+
+                    redisClient.set(userOne.username + '-score-updated', 'true');
+                    redisClient.set(userTwo.username + '-score-updated', 'true');
+                });
+
+
             }
         });
     });

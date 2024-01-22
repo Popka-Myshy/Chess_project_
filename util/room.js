@@ -113,7 +113,7 @@ const joinRoom = (roomId, user) => {
     });
 };
 
-const removeRoom = (roomId, user_rank) => {
+const removeRoom = (roomId, userRank) => {
     redisClient.del(roomId);
     
     redisClient.get('roomIndices', (err, reply) => {
@@ -171,7 +171,7 @@ const removeRoom = (roomId, user_rank) => {
         if(reply){
             numberOfRooms = JSON.parse(reply);
         
-            numberOfRooms[numberOfRoomsIndices[user.user_rank]] += 1;
+            numberOfRooms[numberOfRoomsIndices[userRank]] += 1;
 
             redisClient.set('number-of-rooms', JSON.stringify(numberOfRooms));
         }

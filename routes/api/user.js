@@ -2,6 +2,7 @@ const {Router} = require('express');
 const {check} = require('express-validator');
 const {register} = require('../../controllers/api/user');
 const {login} = require('../../controllers/api/user');
+const {getInfo} = require('../../controllers/api/user');
 
 
 const router = Router();

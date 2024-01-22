@@ -4,14 +4,14 @@
     <%- include('../include/partials/responseMessage') %>
     <%- include('../include/partials/spinner') %>
 
-    <div class="game-room" id="game-room">
+    <div class="game-room hidden" id="game-room">
 
 
 
         <div class="board-and-users">
             <div class="user" id="player-light">
-                <span class="user-name">Player 1</span>
-                <span class="timer">15:00</span>
+                <span class="username"></span>
+                <span class="timer"></span>
             </div>
             
             <div class="chess-board">
@@ -84,8 +84,8 @@
             </div>
 
             <div class="user" id="player-black">
-                <span class="user-name">Player 2</span>
-                <span class="timer">14:40</span>
+                <span class="username"></span>
+                <span class="timer"></span>
             </div>
 
             <p class="waiting-message" id="waiting-message">Waiting for another player to join...</p>
@@ -107,12 +107,33 @@
 
 </div>
 
+<div class="fixed-element-container hidden" id="pieces-to-promote-container">
+    <ul class="pieces-to-promote" id="pieces-to-promote"></ul>
+</div>
+
+<div class="fixed-element-container hidden" id="game-over-message-container">
+    <div class="game-over-message" id="game-over-message">
+        <p><strong>won!</strong></p>
+
+        <div class="scores">
+            <div>My Score:<strong id="my-score">0</strong></div>
+            <div>Enemy Score:<strong id="enemy-score">0</strong></div>
+        </div>
+
+        <a href="/">Get Back To Lobby</a>
+
+    </div>
+</div>
+
+<%- include('../include/partials/toast') %>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="js/spinner.js"></script>
 <script src="js/index.js"></script>
 <script src="js/room/chessBoard.js"></script>
+<script src="js/toast.js"></script>
 <script src="js/room/index.js"></script>
-<!-- <script src="js/room/Timer.js"></script> -->
+<script src="js/room/Timer.js"></script> 
 
 
 
